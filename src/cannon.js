@@ -1,32 +1,36 @@
-import { Projectile } from './projectile.js';
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.136.0/build/three.module.js';
+import * as THREE from 'three'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
 export class Cannon {
-    constructor(scene) {
-        this.scene = scene;
-        this.cannon = null;
-        this.angle = 0;
-        this.position = new THREE.Vector3(0, 1, 5);
-        this.init();
-    }
+  create() {
+    const loader = new GLTFLoader()
 
-    init() {
-        const geometry = new THREE.CylinderGeometry(0.2, 0.2, 1, 32);
-        const material = new THREE.MeshBasicMaterial({ color: 0x888888 });
-        this.cannon = new THREE.Mesh(geometry, material);
-        this.cannon.position.copy(this.position);
-        this.cannon.rotation.x = this.angle;
-        this.scene.add(this.cannon);
+    const cannonGroup = new THREE.Group()
 
-        window.addEventListener('keydown', (event) => {
-            if (event.code === 'Space') {
-                this.fire();
-            }
-        });
-    }
+    loader.load('./models/barrel_of_red_bronze_cannon.glb', (gltf) => {
+      const cannonMesh = gltf.scene
+      cannonMesh.scale.set(0.006, 0.006, 0.006)
+      cannonMesh.position.set(0, 0, 0)
 
-    fire() {
-        const projectile = new Projectile(this.cannon.position.clone(), this.angle);
-        this.scene.add(projectile.mesh);
-    }
+      cannonGroup.add(cannonMesh)
+
+      cannonGroup.rotateX(0)
+      cannonGroup.rotateY(300)
+      cannonGroup.rotateZ(-0.2)
+
+      cannonGroup.position.set(0, -4, 0)
+    })
+
+    const ballGeometry = new THREE.SphereGeometry(0.3, 32, 32)
+    const ballMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 })
+    const referenceBallMesh = new THREE.Mesh(ballGeometry, ballMaterial)
+
+    referenceBallMesh.position.set(-3, 0, 0.07)
+
+    cannonGroup.add(referenceBallMesh)
+
+    referenceBallMesh.visible = false
+
+    return { cannon: cannonGroup, referenceBallMesh }
+  }
 }
