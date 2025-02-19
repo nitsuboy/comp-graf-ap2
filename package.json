@@ -1,0 +1,19 @@
+{
+  "name": "web-game",
+  "version": "1.0.0",
+  "description": "A web application game featuring a controllable cannon that fires projectiles to knock down distant objects.",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "npx vite"
+  },
+  "dependencies": {
+    "cannon-es": "^0.20.0",
+    "three": "^0.136.0"
+  },
+  "devDependencies": {
+    "live-server": "^1.2.1",
+    "vite": "^6.1.0"
+  },
+  "author": "",
+  "license": "ISC"
+}
