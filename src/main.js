@@ -5,6 +5,7 @@ import { Light } from './light'
 import { RandomLevel } from './random-level'
 
 const balls = []
+const { innerWidth, innerHeight } = window;
 
 // Camera
 const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.5, 1000)
@@ -47,33 +48,30 @@ for (const cube of cubes) {
 }
 
 //Cannon object
-const { cannon, referenceBallMesh } = new Cannon().create()
-scene.add(cannon)
+const { cannonpivot, cannon, referenceBallMesh } = new Cannon().create()
+scene.add(cannonpivot)
 
 function getShootDirection(event) {
-  const { innerWidth, innerHeight } = window;
-  const mouseX = (event.clientX / innerWidth) * 2 - 1
-  const mouseY = -(event.clientY / innerHeight) * 2 + 1.7
+  let mouseX = (event.clientX / innerWidth) * 2 - 1
+  let mouseY = -(event.clientY / innerHeight) * 2 + 1.7
 
-  const mouseVector = new THREE.Vector3(mouseX, mouseY, -1)
+  let mouseVector = new THREE.Vector3(mouseX, mouseY, -1)
 
-  const ray = new THREE.Ray(referenceBallMesh.position, mouseVector.normalize())
+  let ray = new THREE.Ray(referenceBallMesh.position, mouseVector.normalize())
 
   return ray.direction
 }
 
 // Event listeners
 window.addEventListener("mousemove", (event) => {
-  const { innerWidth, innerHeight } = window;
+  
+  let mousedirection = getShootDirection(event)
 
-  const x = (event.clientX / innerWidth) * 2 - 1
-  const y = -(event.clientY / innerHeight) * 2 + 2
-
-  cannon.rotation.y = x + 300
-  cannon.rotation.z = -y - 650
+  cannon.rotation.y = -mousedirection.x 
+  cannonpivot.rotation.x =  mousedirection.y
 
   // Update position reference ball
-  const ballPosition = new THREE.Vector3(-3, 0, 0.07)
+  let ballPosition = new THREE.Vector3(0, 0, -3)
   ballPosition.applyMatrix4(cannon.matrixWorld)
 
   referenceBallMesh.position.copy(ballPosition)
