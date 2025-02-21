@@ -3,17 +3,23 @@ import * as THREE from 'three'
 import { Cannon } from './cannon'
 import { Light } from './light'
 import { RandomLevel } from './random-level'
+import { Scenario } from './scenario'
 
 const balls = []
 const { innerWidth, innerHeight } = window;
 
 // Camera
-const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.5, 1000)
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.5, 1000)
 camera.position.set(0, 0, 20)
 
 // Scene
 const scene = new THREE.Scene()
-scene.background = new THREE.Color(0x87ceeb);
+const textureLoader = new THREE.TextureLoader()
+const texture = textureLoader.load("./public/FS002_Day.png", () => {
+  const rt = new THREE.WebGLCubeRenderTarget(texture.image.height);
+  rt.fromEquirectangularTexture(renderer, texture);
+  scene.background = rt.texture;
+});
 scene.fog = new THREE.Fog(0x000000, 500, 1000)
 
 // Renderer
@@ -37,13 +43,24 @@ scene.add(directionalLight)
 const world = new CANNON.World()
 world.gravity.set(0, -9.81, 0)
 
-// Level random
-const { table, cubes } = new RandomLevel().create()
 
-scene.add(table.mesh)
-world.addBody(table.body)
+// Scenario
+const scenario = new Scenario()
+const { groundBody, groundMesh } = scenario.create()
+world.addBody(groundBody)
+scene.add(groundMesh)
+
+scenario.loadModels(scene)
+// scenario.loadGrass(scene)
+
+// Level random
+const { cubes } = new RandomLevel().create()
+
+// scene.add(table.mesh)
+// world.addBody(table.body)
 
 for (const cube of cubes) {
+  scene.add(cube.mesh)
   world.addBody(cube.body)
 }
 
@@ -64,14 +81,14 @@ function getShootDirection(event) {
 
 // Event listeners
 window.addEventListener("mousemove", (event) => {
-  
+
   let mousedirection = getShootDirection(event)
 
-  cannon.rotation.y = -mousedirection.x 
-  cannonpivot.rotation.x =  mousedirection.y
+  cannon.rotation.y = -mousedirection.x
+  cannonpivot.rotation.x = mousedirection.y
 
   // Update position reference ball
-  let ballPosition = new THREE.Vector3(0, 0, -3)
+  let ballPosition = new THREE.Vector3(0, 0, -3.2)
   ballPosition.applyMatrix4(cannon.matrixWorld)
 
   referenceBallMesh.position.copy(ballPosition)
@@ -112,6 +129,12 @@ window.addEventListener('click', (event) => {
   })
 })
 
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight
+  camera.updateProjectionMatrix()
+  renderer.setSize(window.innerWidth, window.innerHeight)
+})
+
 // Animate
 function animate() {
   world.fixedStep()
@@ -121,8 +144,8 @@ function animate() {
     ball.mesh.quaternion.copy(ball.body.quaternion)
   }
 
-  table.mesh.position.copy(table.body.position)
-  table.mesh.quaternion.copy(table.body.quaternion)
+  // table.mesh.position.copy(table.body.position)
+  // table.mesh.quaternion.copy(table.body.quaternion)
 
   for (const cube of cubes) {
     cube.mesh.position.copy(cube.body.position)

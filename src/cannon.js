@@ -13,7 +13,7 @@ export class Cannon {
       //cannonMesh.scale.set(0.006, 0.006, 0.006)
       cannonGroup.add(cannonMesh)
     })
-    cannonPivot.position.set(0,-4,0)
+    cannonPivot.position.set(0, -3, 8)
     cannonPivot.add(cannonGroup)
     const ballGeometry = new THREE.SphereGeometry(0.3, 32, 32)
     const ballMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 })
@@ -25,6 +25,6 @@ export class Cannon {
 
     referenceBallMesh.visible = false
 
-    return { cannonpivot: cannonPivot ,cannon: cannonGroup, referenceBallMesh }
+    return { cannonpivot: cannonPivot, cannon: cannonGroup, referenceBallMesh }
   }
 }
