@@ -5,7 +5,7 @@ export class RandomLevel {
   create() {
     // const tableGroup = new THREE.Group()
 
-    const zPosition = -25
+    const zPosition = -30
 
     // const tableTopGeometry = new THREE.BoxGeometry(5, 0.3, 3)
     // const tableTopMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513 })

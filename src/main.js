@@ -5,21 +5,12 @@ import { Light } from './light'
 import { RandomLevel } from './random-level'
 import { Scenario } from './scenario'
 
-const balls = []
-const { innerWidth, innerHeight } = window;
-
 // Camera
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.5, 1000)
 camera.position.set(0, 0, 20)
 
 // Scene
 const scene = new THREE.Scene()
-const textureLoader = new THREE.TextureLoader()
-const texture = textureLoader.load("./public/FS002_Day.png", () => {
-  const rt = new THREE.WebGLCubeRenderTarget(texture.image.height);
-  rt.fromEquirectangularTexture(renderer, texture);
-  scene.background = rt.texture;
-});
 scene.fog = new THREE.Fog(0x000000, 500, 1000)
 
 // Renderer
@@ -43,21 +34,12 @@ scene.add(directionalLight)
 const world = new CANNON.World()
 world.gravity.set(0, -9.81, 0)
 
-
 // Scenario
 const scenario = new Scenario()
-const { groundBody, groundMesh } = scenario.create()
-world.addBody(groundBody)
-scene.add(groundMesh)
-
-scenario.loadModels(scene)
-// scenario.loadGrass(scene)
+scenario.create(scene, world, renderer)
 
 // Level random
 const { cubes } = new RandomLevel().create()
-
-// scene.add(table.mesh)
-// world.addBody(table.body)
 
 for (const cube of cubes) {
   scene.add(cube.mesh)
@@ -65,68 +47,16 @@ for (const cube of cubes) {
 }
 
 //Cannon object
-const { cannonpivot, cannon, referenceBallMesh } = new Cannon().create()
-scene.add(cannonpivot)
-
-function getShootDirection(event) {
-  let mouseX = (event.clientX / innerWidth) * 2 - 1
-  let mouseY = -(event.clientY / innerHeight) * 2 + 1.7
-
-  let mouseVector = new THREE.Vector3(mouseX, mouseY, -1)
-
-  let ray = new THREE.Ray(referenceBallMesh.position, mouseVector.normalize())
-
-  return ray.direction
-}
+const cannon = new Cannon()
+cannon.create(scene)
 
 // Event listeners
-window.addEventListener("mousemove", (event) => {
-
-  let mousedirection = getShootDirection(event)
-
-  cannon.rotation.y = -mousedirection.x
-  cannonpivot.rotation.x = mousedirection.y
-
-  // Update position reference ball
-  let ballPosition = new THREE.Vector3(0, 0, -3.2)
-  ballPosition.applyMatrix4(cannon.matrixWorld)
-
-  referenceBallMesh.position.copy(ballPosition)
+window.addEventListener('mousemove', (event) => {
+  cannon.updateRefereceBallPosition(scene, event)
 })
 
 window.addEventListener('click', (event) => {
-  const ballShape = new CANNON.Sphere(0.3)
-  const ballBody = new CANNON.Body({ mass: 1 })
-  ballBody.addShape(ballShape)
-
-  const ballGeometry = new THREE.SphereGeometry(0.3, 32, 32)
-  const ballMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 })
-  const ballMesh = new THREE.Mesh(ballGeometry, ballMaterial)
-
-  ballMesh.castShadow = true
-  ballMesh.receiveShadow = true
-
-  ballBody.position.copy(referenceBallMesh.position)
-  ballMesh.position.copy(referenceBallMesh.position)
-
-  world.addBody(ballBody)
-  scene.add(ballMesh)
-
-  ballBody.velocity.set(0, 0, 0);
-
-  const shootVelocity = 28
-  const shootDirection = getShootDirection(event)
-
-  ballBody.velocity.set(
-    shootDirection.x * shootVelocity,
-    shootDirection.y * shootVelocity,
-    shootDirection.z * shootVelocity
-  )
-
-  balls.push({
-    mesh: ballMesh,
-    body: ballBody
-  })
+  cannon.shot(scene, world, event)
 })
 
 window.addEventListener('resize', () => {
@@ -139,10 +69,7 @@ window.addEventListener('resize', () => {
 function animate() {
   world.fixedStep()
 
-  for (const ball of balls) {
-    ball.mesh.position.copy(ball.body.position)
-    ball.mesh.quaternion.copy(ball.body.quaternion)
-  }
+  cannon.animateBalls()
 
   // table.mesh.position.copy(table.body.position)
   // table.mesh.quaternion.copy(table.body.quaternion)
@@ -151,6 +78,8 @@ function animate() {
     cube.mesh.position.copy(cube.body.position)
     cube.mesh.quaternion.copy(cube.body.quaternion)
   }
+
+  cannon.animateExplosion()
 
   renderer.render(scene, camera)
 }

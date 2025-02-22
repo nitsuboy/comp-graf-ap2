@@ -7,6 +7,7 @@
     "start": "npx vite"
   },
   "dependencies": {
+    "@g.frame/shader-particle-engine": "^1.0.12",
     "cannon-es": "^0.20.0",
     "three": "^0.136.0"
   },
