@@ -3,9 +3,22 @@ import * as THREE from 'three'
 import { Cannon } from './cannon'
 import { Light } from './light'
 import { RandomLevel } from './random-level'
+import { Score } from './score'
 
 const balls = []
 const { innerWidth, innerHeight } = window;
+
+// Score
+const scoreManager = new Score()
+
+function checkKnockedOverCubes() {
+  cubes.forEach(cube => {
+    if (cube.body.position.y < scoreManager.threshold && !cube.knockedOver) {
+      cube.knockedOver = true
+      scoreManager.addPoints()
+    }
+  })
+}
 
 // Camera
 const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.5, 1000)
@@ -64,11 +77,11 @@ function getShootDirection(event) {
 
 // Event listeners
 window.addEventListener("mousemove", (event) => {
-  
+
   let mousedirection = getShootDirection(event)
 
-  cannon.rotation.y = -mousedirection.x 
-  cannonpivot.rotation.x =  mousedirection.y
+  cannon.rotation.y = -mousedirection.x
+  cannonpivot.rotation.x = mousedirection.y
 
   // Update position reference ball
   let ballPosition = new THREE.Vector3(0, 0, -3)
@@ -128,6 +141,8 @@ function animate() {
     cube.mesh.position.copy(cube.body.position)
     cube.mesh.quaternion.copy(cube.body.quaternion)
   }
+
+  checkKnockedOverCubes();
 
   renderer.render(scene, camera)
 }
