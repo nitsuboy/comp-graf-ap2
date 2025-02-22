@@ -4,6 +4,7 @@ import { Cannon } from './cannon'
 import { Light } from './light'
 import { RandomLevel } from './random-level'
 import { Scenario } from './scenario'
+import { Score } from './score'
 
 // Camera
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.5, 1000)
@@ -39,11 +40,19 @@ const scenario = new Scenario()
 scenario.create(scene, world, renderer)
 
 // Level random
-const { cubes } = new RandomLevel().create()
+const randomLevel = new RandomLevel()
+randomLevel.create(scene, world)
 
-for (const cube of cubes) {
-  scene.add(cube.mesh)
-  world.addBody(cube.body)
+// Score
+const scoreManager = new Score()
+
+function checkKnockedOverCubes() {
+  randomLevel.cubes.forEach(cube => {
+    if (cube.body.position.y < scoreManager.threshold && !cube.knockedOver) {
+      cube.knockedOver = true
+      scoreManager.addPoints()
+    }
+  })
 }
 
 //Cannon object
@@ -69,17 +78,13 @@ window.addEventListener('resize', () => {
 function animate() {
   world.fixedStep()
 
+  randomLevel.animateLevel()
+
   cannon.animateBalls()
 
-  // table.mesh.position.copy(table.body.position)
-  // table.mesh.quaternion.copy(table.body.quaternion)
-
-  for (const cube of cubes) {
-    cube.mesh.position.copy(cube.body.position)
-    cube.mesh.quaternion.copy(cube.body.quaternion)
-  }
-
   cannon.animateExplosion()
+
+  checkKnockedOverCubes()
 
   renderer.render(scene, camera)
 }
