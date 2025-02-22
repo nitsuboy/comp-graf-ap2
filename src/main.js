@@ -3,30 +3,15 @@ import * as THREE from 'three'
 import { Cannon } from './cannon'
 import { Light } from './light'
 import { RandomLevel } from './random-level'
+import { Scenario } from './scenario'
 import { Score } from './score'
 
-const balls = []
-const { innerWidth, innerHeight } = window;
-
-// Score
-const scoreManager = new Score()
-
-function checkKnockedOverCubes() {
-  cubes.forEach(cube => {
-    if (cube.body.position.y < scoreManager.threshold && !cube.knockedOver) {
-      cube.knockedOver = true
-      scoreManager.addPoints()
-    }
-  })
-}
-
 // Camera
-const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.5, 1000)
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.5, 1000)
 camera.position.set(0, 0, 20)
 
 // Scene
 const scene = new THREE.Scene()
-scene.background = new THREE.Color(0x87ceeb);
 scene.fog = new THREE.Fog(0x000000, 500, 1000)
 
 // Renderer
@@ -50,99 +35,56 @@ scene.add(directionalLight)
 const world = new CANNON.World()
 world.gravity.set(0, -9.81, 0)
 
+// Scenario
+const scenario = new Scenario()
+scenario.create(scene, world, renderer)
+
 // Level random
-const { table, cubes } = new RandomLevel().create()
+const randomLevel = new RandomLevel()
+randomLevel.create(scene, world)
 
-scene.add(table.mesh)
-world.addBody(table.body)
+// Score
+const scoreManager = new Score()
 
-for (const cube of cubes) {
-  world.addBody(cube.body)
+function checkKnockedOverCubes() {
+  randomLevel.cubes.forEach(cube => {
+    if (cube.body.position.y < scoreManager.threshold && !cube.knockedOver) {
+      cube.knockedOver = true
+      scoreManager.addPoints()
+    }
+  })
 }
 
 //Cannon object
-const { cannonpivot, cannon, referenceBallMesh } = new Cannon().create()
-scene.add(cannonpivot)
-
-function getShootDirection(event) {
-  let mouseX = (event.clientX / innerWidth) * 2 - 1
-  let mouseY = -(event.clientY / innerHeight) * 2 + 1.7
-
-  let mouseVector = new THREE.Vector3(mouseX, mouseY, -1)
-
-  let ray = new THREE.Ray(referenceBallMesh.position, mouseVector.normalize())
-
-  return ray.direction
-}
+const cannon = new Cannon()
+cannon.create(scene)
 
 // Event listeners
-window.addEventListener("mousemove", (event) => {
-
-  let mousedirection = getShootDirection(event)
-
-  cannon.rotation.y = -mousedirection.x
-  cannonpivot.rotation.x = mousedirection.y
-
-  // Update position reference ball
-  let ballPosition = new THREE.Vector3(0, 0, -3)
-  ballPosition.applyMatrix4(cannon.matrixWorld)
-
-  referenceBallMesh.position.copy(ballPosition)
+window.addEventListener('mousemove', (event) => {
+  cannon.updateRefereceBallPosition(scene, event)
 })
 
 window.addEventListener('click', (event) => {
-  const ballShape = new CANNON.Sphere(0.3)
-  const ballBody = new CANNON.Body({ mass: 1 })
-  ballBody.addShape(ballShape)
+  cannon.shot(scene, world, event)
+})
 
-  const ballGeometry = new THREE.SphereGeometry(0.3, 32, 32)
-  const ballMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 })
-  const ballMesh = new THREE.Mesh(ballGeometry, ballMaterial)
-
-  ballMesh.castShadow = true
-  ballMesh.receiveShadow = true
-
-  ballBody.position.copy(referenceBallMesh.position)
-  ballMesh.position.copy(referenceBallMesh.position)
-
-  world.addBody(ballBody)
-  scene.add(ballMesh)
-
-  ballBody.velocity.set(0, 0, 0);
-
-  const shootVelocity = 28
-  const shootDirection = getShootDirection(event)
-
-  ballBody.velocity.set(
-    shootDirection.x * shootVelocity,
-    shootDirection.y * shootVelocity,
-    shootDirection.z * shootVelocity
-  )
-
-  balls.push({
-    mesh: ballMesh,
-    body: ballBody
-  })
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight
+  camera.updateProjectionMatrix()
+  renderer.setSize(window.innerWidth, window.innerHeight)
 })
 
 // Animate
 function animate() {
   world.fixedStep()
 
-  for (const ball of balls) {
-    ball.mesh.position.copy(ball.body.position)
-    ball.mesh.quaternion.copy(ball.body.quaternion)
-  }
+  randomLevel.animateLevel()
 
-  table.mesh.position.copy(table.body.position)
-  table.mesh.quaternion.copy(table.body.quaternion)
+  cannon.animateBalls()
 
-  for (const cube of cubes) {
-    cube.mesh.position.copy(cube.body.position)
-    cube.mesh.quaternion.copy(cube.body.quaternion)
-  }
+  cannon.animateExplosion()
 
-  checkKnockedOverCubes();
+  checkKnockedOverCubes()
 
   renderer.render(scene, camera)
 }
