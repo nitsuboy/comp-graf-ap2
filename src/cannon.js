@@ -21,8 +21,26 @@ export class Cannon {
     this.explosionGroup = null
     this.shockwaveGroup = null
     this.currentTimeout = null
+    this.difficulty = 'normal'
+    this.setDifficulty(this.difficulty)
+    this.updateAmmoDisplay()
+
   }
 
+  
+
+  updateAmmoDisplay() {
+    const ammoCounter = document.getElementById('ammo-counter')
+    if (!ammoCounter) return
+  
+    if (this.difficulty.maxBullets === Infinity) {
+      ammoCounter.innerText = 'Balas: ∞'
+    } else {
+      const bulletsLeft = this.difficulty.maxBullets - this.balls.length
+      ammoCounter.innerText = `Balas: ${bulletsLeft >= 0 ? bulletsLeft : 0}`
+    }
+  }
+  
   create(scene) {
     const loader = new GLTFLoader()
 
@@ -81,7 +99,23 @@ export class Cannon {
     return ray.direction
   }
 
+  setDifficulty(difficulty) {
+    const difficulties = {
+      easy: { shootVelocity: 20, gravity: -4, maxBullets: Infinity },
+      normal: { shootVelocity: 28, gravity: -9.8, maxBullets: 10 },
+      hard: { shootVelocity: 35, gravity: -15, maxBullets: 5 }
+    }
+  
+    this.difficulty = difficulties[difficulty] || difficulties.normal
+  }
+  
   shot(scene, world, event) {
+
+    if (this.balls.length >= this.difficulty.maxBullets) {
+      console.log("Sem munição!")
+      return
+    }
+
     const ballShape = new CANNON.Sphere(0.3)
     const ballBody = new CANNON.Body({ mass: 1 })
 
@@ -97,13 +131,16 @@ export class Cannon {
     ballBody.position.copy(this.referenceBallMesh.position)
     ballMesh.position.copy(this.referenceBallMesh.position)
 
+    world.gravity.set(0, this.difficulty.gravity, 0)
+
     world.addBody(ballBody)
 
     scene.add(ballMesh)
 
     ballBody.velocity.set(0, 0, 0);
 
-    const shootVelocity = 28
+    //const shootVelocity = 28
+    const shootVelocity = this.difficulty.shootVelocity
     const shootDirection = this.getShootDirection(event)
 
     ballBody.velocity.set(
@@ -116,6 +153,8 @@ export class Cannon {
       mesh: ballMesh,
       body: ballBody
     })
+
+    this.updateAmmoDisplay()
 
     this.resetExplosion(scene)
 
